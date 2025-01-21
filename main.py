@@ -8,7 +8,7 @@ from keep_alive import keep_alive
 from dotenv import load_dotenv
 
 load_dotenv()
-token = os.getenv("TOKEN")
+token = ${{ secrets.TOKEN }}
 # Intents and Bot setup
 intents = discord.Intents.default()
 intents.messages = True
