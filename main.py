@@ -8,7 +8,9 @@ from keep_alive import keep_alive
 from dotenv import load_dotenv
 
 load_dotenv()
-token = os.environ["token"]
+DISCORD_TOKEN = os.getenv("TOKEN")
+if not DISCORD_TOKEN:
+    raise ValueError("No token found. Make sure the TOKEN environment variable is set.")
 # Intents and Bot setup
 intents = discord.Intents.default()
 intents.messages = True
@@ -136,4 +138,4 @@ async def leaderboard(ctx):
 # Run the bot
 keep_alive()
 
-bot.run(token)
+bot.run(DISCORD_TOKEN)
