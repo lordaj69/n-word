@@ -137,5 +137,6 @@ async def leaderboard(ctx):
 
 # Run the bot
 keep_alive()
+print(f"TOKEN: {os.getenv('TOKEN')}")
 
 bot.run(DISCORD_TOKEN)
