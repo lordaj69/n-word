@@ -9,6 +9,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("TOKEN")
+
+# Debugging: Print token presence
+print(f"Token fetched: {DISCORD_TOKEN}")  # Check logs to see the value
+
 if not DISCORD_TOKEN:
     raise ValueError("No token found. Make sure the TOKEN environment variable is set.")
 # Intents and Bot setup
@@ -137,6 +141,5 @@ async def leaderboard(ctx):
 
 # Run the bot
 keep_alive()
-print(f"TOKEN: {os.getenv('TOKEN')}")
 
 bot.run(DISCORD_TOKEN)
