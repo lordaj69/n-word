@@ -8,7 +8,8 @@ from keep_alive import keep_alive
 from dotenv import load_dotenv
 
 load_dotenv()
-DISCORD_TOKEN = os.getenv("TOKEN")
+DISCORD_TOKEN = os.environ.get("TOKEN")
+
 
 # Debugging: Print token presence
 print(f"Token fetched: {DISCORD_TOKEN}")  # Check logs to see the value
