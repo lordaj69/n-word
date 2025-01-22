@@ -10,13 +10,6 @@ from dotenv import load_dotenv
 load_dotenv()
 DISCORD_TOKEN = os.environ.get("TOKEN")
 
-
-# Debugging: Print token presence
-print(f"Token fetched: {DISCORD_TOKEN}")  # Check logs to see the value
-
-if not DISCORD_TOKEN:
-    raise ValueError("No token found. Make sure the TOKEN environment variable is set.")
-print(f"Available Environment Variables: {os.environ}")
 # Intents and Bot setup
 intents = discord.Intents.default()
 intents.messages = True
