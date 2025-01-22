@@ -144,4 +144,4 @@ async def leaderboard(ctx):
 # Run the bot
 keep_alive()
 
-bot.run('MTMzMDg5MzQ5NTQ0Mjg2NjE4Ng.G58435.b_rwpu8x3jD6vzXYBs7mC6jER5yVgbcFkyWTIA')
+bot.run(DISCORD_TOKEN)
