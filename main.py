@@ -57,16 +57,16 @@ def get_counts(user_id):
 count_cooldowns = {}
 
 
-def update_counts(user_id, counts):
-    """Update word counts for a user in the database."""
-    cursor.execute("""
-    INSERT INTO word_counts (user_id, nigga_count, nigger_count)
-    VALUES (%s, %s, %s)
+def update_counts(user_id, word, count):
+    """Increment word count for a specific user in the database."""
+    cursor.execute(f"""
+    INSERT INTO word_counts (user_id, {word}_count)
+    VALUES (%s, %s)
     ON CONFLICT (user_id) DO UPDATE
-    SET nigga_count = word_counts.nigga_count + EXCLUDED.nigga_count,
-        nigger_count = word_counts.nigger_count + EXCLUDED.nigger_count;
-    """, (user_id, counts["nigga"], counts["nigger"]))
+    SET {word}_count = word_counts.{word}_count + EXCLUDED.{word}_count;
+    """, (user_id, count))
     conn.commit()
+
 
 
 @bot.event
@@ -94,14 +94,13 @@ async def on_message(message):
 
     if word_found:
         # Increment counts in the database
-        counts = get_counts(user_id)
         for word in tracked_words:
             if word in content:
-                counts[word] += 1
-        update_counts(user_id, counts)
+                update_counts(user_id, word, 1)  # Increment count by 1 for each word found
         count_cooldowns[user_id] = now
 
     await bot.process_commands(message)
+
 
 
 
