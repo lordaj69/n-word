@@ -121,17 +121,21 @@ async def count(ctx, member: discord.Member = None):
     if result:
         counts['nigga'], counts['nigger'] = result
 
+    total_count = counts['nigga'] + counts['nigger']
+
     embed = discord.Embed(
         title=f"{member.name}'s Word Count Stats",
         color=discord.Color.blurple(),
-        description=f"**Here's how many times {member.mention} has used the tracked words:**"
+        description=f"**Here's the word usage count for {member.mention} :**"
     )
     embed.set_thumbnail(url=member.avatar.url)
     embed.add_field(name="'Nigga'", value=f"**{counts['nigga']}**", inline=True)
     embed.add_field(name="'Nigger'", value=f"**{counts['nigger']}**", inline=True)
+    embed.add_field(name="Total Count", value=f"**{total_count}**", inline=False)
     embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar.url)
     
     await ctx.send(embed=embed)
+
 
 
 @bot.command()
@@ -156,18 +160,24 @@ async def leaderboard(ctx):
     )
 
     for rank, (user_id, nigga_count, nigger_count) in enumerate(leaderboard, start=1):
+        total_count = nigga_count + nigger_count
         try:
             user = await bot.fetch_user(int(user_id))
-            total = nigga_count + nigger_count
             embed.add_field(
                 name=f"#{rank} - {user.name}",
-                value=f"**Total:** {total}\n'Nigga': {nigga_count}, 'Nigger': {nigger_count}",
+                value=(
+                    f"**Total Words:** {total_count}\n"
+                    f"'Nigga': {nigga_count}, 'Nigger': {nigger_count}"
+                ),
                 inline=False
             )
         except discord.NotFound:
             embed.add_field(
                 name=f"#{rank} - Unknown User",
-                value=f"Data unavailable",
+                value=(
+                    f"**Total Words:** {total_count}\n"
+                    f"'Nigga': {nigga_count}, 'Nigger': {nigger_count}"
+                ),
                 inline=False
             )
 
