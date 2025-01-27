@@ -8,7 +8,9 @@ from keep_alive import keep_alive
 from dotenv import load_dotenv
 
 load_dotenv()
-DISCORD_TOKEN = os.environ.get("TOKEN")
+DISCORD_TOKEN = os.getenv("TOKEN")
+if not DISCORD_TOKEN:
+    raise ValueError("No token found. Make sure the TOKEN environment variable is set.")
 
 # Intents and Bot setup
 intents = discord.Intents.default()
@@ -21,38 +23,29 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 DATA_FILE = "word_count_data.json"
 
 # Configurable cooldown time (in seconds)
-COOLDOWN_TIME = 1
+COOLDOWN_TIME = 30
 
 
 # Function to load JSON data safely
 def load_data():
-    """Load data from the JSON file or initialize if empty/invalid."""
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r") as file:
                 return json.load(file)
         except (json.JSONDecodeError, ValueError):
-            print(
-                f"Error: {DATA_FILE} is empty or corrupted. Reinitializing data."
-            )
+            print(f"Error: {DATA_FILE} is empty or corrupted. Reinitializing data.")
     return {}
 
 
 # Load or initialize the word count data
 user_word_count = load_data()
-
-# Convert loaded data to defaultdict for easier usage
-user_word_count = defaultdict(lambda: {
-    'nigga': 0,
-    'nigger': 0
-}, user_word_count)
+user_word_count = defaultdict(lambda: {"nigga": 0, "nigger": 0}, user_word_count)
 
 # Cooldowns for counting words
 count_cooldowns = {}
 
 
 def save_data():
-    """Save user_word_count to a JSON file."""
     with open(DATA_FILE, "w") as file:
         json.dump(user_word_count, file)
 
@@ -70,24 +63,22 @@ async def on_message(message):
     user_id = str(message.author.id)
     now = time.time()
 
-    # Check for cooldown (only for word counting)
-    if user_id in count_cooldowns and now - count_cooldowns[
-            user_id] < COOLDOWN_TIME:
+    # Check for cooldown
+    if user_id in count_cooldowns and now - count_cooldowns[user_id] < COOLDOWN_TIME:
         await bot.process_commands(message)
         return
 
     # Words to track
-    tracked_words = ['nigga', 'nigger']
+    tracked_words = ["nigga", "nigger"]
     content = message.content.lower()
     word_found = any(word in content for word in tracked_words)
 
     if word_found:
-        # Increment by 1 per word regardless of count in the message
         for word in tracked_words:
             if word in content:
                 user_word_count[user_id][word] += 1
         count_cooldowns[user_id] = now
-        save_data()  # Save data after each update
+        save_data()
 
     await bot.process_commands(message)
 
@@ -95,43 +86,60 @@ async def on_message(message):
 @bot.command(aliases=["c"])
 async def count(ctx, member: discord.Member = None):
     """Check the word count for the specified user or yourself if no user is mentioned."""
-    if member is None:
-        # Default to the message author if no member is mentioned
-        user_id = str(ctx.author.id)
-        counts = user_word_count[user_id]
-        await ctx.send(f"{ctx.author.mention}, you have said:\n"
-                       f"**'nigga': {counts['nigga']} times**\n"
-                       f"**'nigger': {counts['nigger']} times**")
-    else:
-        # If a member is mentioned, show their count
-        user_id = str(member.id)
-        counts = user_word_count.get(user_id, {'nigga': 0, 'nigger': 0})
-        await ctx.send(f"{member.mention} has said:\n"
-                       f"**'nigga': {counts['nigga']} times**\n"
-                       f"**'nigger': {counts['nigger']} times**")
+    member = member or ctx.author
+    user_id = str(member.id)
+    counts = user_word_count.get(user_id, {"nigga": 0, "nigger": 0})
+    total_count = sum(counts.values())
+
+    embed = discord.Embed(
+        title="Word Usage Count",
+        color=discord.Color.blue(),
+        description=f"Here's the word usage count for {member.mention}:"
+    )
+    embed.set_thumbnail(url=member.avatar.url)
+    embed.add_field(name="Total Words", value=f"{total_count}", inline=False)
+    embed.add_field(name="'nigga'", value=f"{counts['nigga']}", inline=True)
+    embed.add_field(name="'nigger'", value=f"{counts['nigger']}", inline=True)
+    embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar.url)
+
+    await ctx.send(embed=embed)
 
 
 @bot.command()
 async def leaderboard(ctx):
     """Display the leaderboard of top users."""
-    leaderboard = sorted(user_word_count.items(),
-                         key=lambda x: sum(x[1].values()),
-                         reverse=True)
-    message = "**Leaderboard:**\n"
+    leaderboard = sorted(
+        user_word_count.items(), key=lambda x: sum(x[1].values()), reverse=True
+    )
+    embed = discord.Embed(
+        title="Leaderboard",
+        color=discord.Color.gold(),
+        description="Top users based on word usage:"
+    )
 
     if not leaderboard:
-        await ctx.send("No data available for the leaderboard.")
+        embed.description = "No data available for the leaderboard."
+        await ctx.send(embed=embed)
         return
 
     for rank, (user_id, counts) in enumerate(leaderboard[:10], start=1):
         try:
             user = await bot.fetch_user(int(user_id))
             total = sum(counts.values())
-            message += f"{rank}. {user.name}: {total} total words ('nigga': {counts['nigga']}, 'nigger': {counts['nigger']})\n"
+            embed.add_field(
+                name=f"{rank}. {user.name}",
+                value=f"**Total**: {total} | **'nigga'**: {counts['nigga']} | **'nigger'**: {counts['nigger']}",
+                inline=False
+            )
         except discord.NotFound:
-            message += f"{rank}. [Unknown User]: Data not available.\n"
+            embed.add_field(
+                name=f"{rank}. Unknown User",
+                value="User data not available.",
+                inline=False
+            )
 
-    await ctx.send(message)
+    embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar.url)
+    await ctx.send(embed=embed)
 
 
 # Run the bot
