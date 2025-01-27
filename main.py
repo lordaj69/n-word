@@ -52,9 +52,6 @@ def get_counts(user_id):
         return {"nigga": result[0], "nigger": result[1]}
     return {"nigga": 0, "nigger": 0}
     
-# Load or initialize the word count data
-user_word_count = load_data()
-user_word_count = defaultdict(lambda: {"nigga": 0, "nigger": 0}, user_word_count)
 
 # Cooldowns for counting words
 count_cooldowns = {}
