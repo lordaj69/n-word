@@ -106,41 +106,74 @@ async def on_message(message):
 
 @bot.command(aliases=["c"])
 async def count(ctx, member: discord.Member = None):
+    """Check the word count for the specified user or yourself if no user is mentioned."""
     if member is None:
-        user_id = str(ctx.author.id)
-        counts = get_counts(user_id)
-        await ctx.send(f"{ctx.author.mention}, you have said:\n"
-                       f"**'nigga': {counts['nigga']} times**\n"
-                       f"**'nigger': {counts['nigger']} times**")
-    else:
-        user_id = str(member.id)
-        counts = get_counts(user_id)
-        await ctx.send(f"{member.mention} has said:\n"
-                       f"**'nigga': {counts['nigga']} times**\n"
-                       f"**'nigger': {counts['nigger']} times**")
+        # Default to the message author if no member is mentioned
+        member = ctx.author
+
+    user_id = str(member.id)
+    cursor.execute("""
+    SELECT nigga_count, nigger_count FROM word_counts WHERE user_id = %s;
+    """, (user_id,))
+    result = cursor.fetchone()
+
+    counts = {'nigga': 0, 'nigger': 0}
+    if result:
+        counts['nigga'], counts['nigger'] = result
+
+    embed = discord.Embed(
+        title=f"{member.name}'s Word Count Stats",
+        color=discord.Color.blurple(),
+        description=f"**Here's how many times {member.mention} has used the tracked words:**"
+    )
+    embed.set_thumbnail(url=member.avatar.url)
+    embed.add_field(name="'Nigga'", value=f"**{counts['nigga']}**", inline=True)
+    embed.add_field(name="'Nigger'", value=f"**{counts['nigger']}**", inline=True)
+    embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar.url)
+    
+    await ctx.send(embed=embed)
 
 
 @bot.command()
 async def leaderboard(ctx):
     """Display the leaderboard of top users."""
-    cursor.execute("SELECT user_id, nigga_count, nigger_count FROM word_counts;")
+    cursor.execute("""
+    SELECT user_id, nigga_count, nigger_count
+    FROM word_counts
+    ORDER BY (nigga_count + nigger_count) DESC
+    LIMIT 10;
+    """)
     leaderboard = cursor.fetchall()
-    leaderboard = sorted(leaderboard, key=lambda x: x[1] + x[2], reverse=True)
 
-    message = "**Leaderboard:**\n"
     if not leaderboard:
         await ctx.send("No data available for the leaderboard.")
         return
 
-    for rank, (user_id, nigga_count, nigger_count) in enumerate(leaderboard[:10], start=1):
+    embed = discord.Embed(
+        title="📊 Leaderboard",
+        color=discord.Color.gold(),
+        description="Here are the top 10 users based on their word counts:"
+    )
+
+    for rank, (user_id, nigga_count, nigger_count) in enumerate(leaderboard, start=1):
         try:
             user = await bot.fetch_user(int(user_id))
             total = nigga_count + nigger_count
-            message += f"{rank}. {user.name}: {total} total words ('nigga': {nigga_count}, 'nigger': {nigger_count})\n"
+            embed.add_field(
+                name=f"#{rank} - {user.name}",
+                value=f"**Total:** {total}\n'Nigga': {nigga_count}, 'Nigger': {nigger_count}",
+                inline=False
+            )
         except discord.NotFound:
-            message += f"{rank}. [Unknown User]: Data not available.\n"
+            embed.add_field(
+                name=f"#{rank} - Unknown User",
+                value=f"Data unavailable",
+                inline=False
+            )
 
-    await ctx.send(message)
+    embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar.url)
+    await ctx.send(embed=embed)
+
 
 
 @bot.event
