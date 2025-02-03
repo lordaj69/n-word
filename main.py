@@ -40,7 +40,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 DATA_FILE = "word_count_data.json"
 
 # Configurable cooldown time (in seconds)
-COOLDOWN_TIME = 1
+COOLDOWN_TIME = 12
 
 
 # Function to load JSON data safely
